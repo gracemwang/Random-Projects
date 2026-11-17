@@ -10,12 +10,31 @@ struct Player{
     var name: String
     var score: Int
     var cards: [Card]
+    var selectedCards: [Card]
+    
+    mutating func clickCard(card:Card){
+        if (selectedCards.contains(where:{$0.id == card.id})) {
+            selectedCards.removeAll(where:{$0.id == card.id})
+        }
+        else{
+            selectedCards.append(card)
+        }
+    }
+    
+    mutating func playSelectedCards(){
+        for card in cards{
+            if (selectedCards.contains(where:{$0.id == card.id})) {
+                cards.removeAll(where:{$0.id == card.id})
+            }
+        }
+        selectedCards.removeAll()
+    }
 }
 
 struct ContentView: View {
     @State var deck = [Card]()
-    @State var player1 = Player(name:"Player 1", score:0, cards:[Card]())
-    @State var player2 = Player(name:"Player 2", score:0, cards:[Card]())
+    @State var player1 = Player(name:"Player 1", score:0, cards:[Card](), selectedCards:[Card]())
+    @State var player2 = Player(name:"Player 2", score:0, cards:[Card](), selectedCards:[Card]())
     
     func buildDeck(){
         for val in 3...15 {
@@ -64,18 +83,25 @@ struct ContentView: View {
                 Button(action: {startRound()}, label: {Text("Start Round")})
                 Text(player1.name + ": " + String(player1.score))
                 Text(player2.name + ": " + String(player2.score))
-                
             }
             HStack {
-                HStack{
-                    ForEach(player1.cards){ card in
-                        Button(action: {}, label:{Text(String(card.id))})
+                VStack{
+                    Button(action: {player1.playSelectedCards()}, label: {Text("Play 1")})
+                    Text(describeCards(cards: player1.selectedCards))
+                    HStack{
+                        ForEach(player1.cards){ card in
+                            Button(action: {player1.clickCard(card:card)}, label:{Text(String(card.id))})
+                        }
                     }
                 }.fixedSize().rotationEffect(Angle(degrees:90)).frame(width: 30)
-                Spacer().frame(width:300)
-                HStack{
-                    ForEach(player2.cards){ card in
-                        Button(action: {}, label:{Text(String(card.id))})
+                Spacer().frame(width:200)
+                VStack{
+                    Button(action: {player2.playSelectedCards()}, label: {Text("Play 2")})
+                    Text(describeCards(cards: player2.selectedCards))
+                    HStack{
+                        ForEach(player2.cards){ card in
+                            Button(action: {player2.clickCard(card:card)}, label:{Text(String(card.id))})
+                        }
                     }
                 }.fixedSize().rotationEffect(Angle(degrees:-90)).frame(width: 30)
             }
