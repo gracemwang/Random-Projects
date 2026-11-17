@@ -1,15 +1,9 @@
-//
-//  ContentView.swift
-//  DDZ
-//
-//  Created by Grace Wang on 11/17/26.
-//
-
 import SwiftUI
 
-struct Card{
-    var val: Int
-    var suit: String
+struct Card: Identifiable{
+    let val: Int
+    let suit: String
+    let id: String
 }
 
 struct Player{
@@ -26,17 +20,29 @@ struct ContentView: View {
     func buildDeck(){
         for val in 3...15 {
             for suit in ["C", "D", "H", "S"] {
-                deck.append(Card(val:val,suit:suit))
+                deck.append(Card(val:val,suit:suit,id:(String(val)+suit)))
             }
         }
-        deck.append(Card(val:16,suit:""))
-        deck.append(Card(val:17,suit:""))
+        deck.append(Card(val:16,suit:"",id:"16"))
+        deck.append(Card(val:17,suit:"",id:"17"))
+    }
+    
+    func cmp(card1:Card, card2:Card) -> Bool{
+        if (card1.val < card2.val){
+            return true
+        }
+        if (card1.val == card2.val) && (card1.suit < card2.suit){
+            return true
+        }
+        return false
     }
     
     func startRound(){
         deck.shuffle();
         player1.cards = Array(deck[0...26])
+        player1.cards.sort(by:cmp)
         player2.cards = Array(deck[27...53])
+        player2.cards.sort(by:cmp)
     }
     
     func describeCards(cards:[Card]) -> String{
@@ -48,8 +54,6 @@ struct ContentView: View {
         }
         return(out)
     }
-    
-    
     
     var body: some View {
         ZStack {
@@ -63,9 +67,17 @@ struct ContentView: View {
                 
             }
             HStack {
-                Text(describeCards(cards:player1.cards)).fixedSize().rotationEffect(Angle(degrees:90)).frame(width: 30)
+                HStack{
+                    ForEach(player1.cards){ card in
+                        Button(action: {}, label:{Text(String(card.id))})
+                    }
+                }.fixedSize().rotationEffect(Angle(degrees:90)).frame(width: 30)
                 Spacer().frame(width:300)
-                Text(describeCards(cards:player2.cards)).fixedSize().rotationEffect(Angle(degrees:-90)).frame(width: 30)
+                HStack{
+                    ForEach(player2.cards){ card in
+                        Button(action: {}, label:{Text(String(card.id))})
+                    }
+                }.fixedSize().rotationEffect(Angle(degrees:-90)).frame(width: 30)
             }
         }
     }
