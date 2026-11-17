@@ -1,2 +1,2 @@
-# Scratch
-# Scratch
+# For the DDZ, next steps: start with just doing two players playing big two. Can possibly remove one third of the cards, otherwise the model will be able to know all our cards and probably win for sure ?? Needs investigating.
+Make sure to have the model only refresh its context after starting a new round.

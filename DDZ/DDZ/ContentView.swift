@@ -20,7 +20,7 @@ struct Player{
     var name: String
     var score: Int
     var cards: [Card]
-    var selectedCards: [Card]
+    var selectedCards: [Card] // Please implement me as as a priority queue and change clickCard to be better when you have the time :)
     
     mutating func clickCard(card:Card){
         if (selectedCards.contains(where:{$0.id == card.id})) {
@@ -79,6 +79,8 @@ struct Player{
             
         }
         if (n >= 6){ // Check for a straight of pairs. I think it doesn't allow A + 2 on the bottom and doesn't allow 2 on the top.
+        }
+        if (n >= 6){ // Add airplanes
         }
         return ("no", 0)
     }
