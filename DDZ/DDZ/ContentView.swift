@@ -1,4 +1,5 @@
 import SwiftUI
+internal import Combine
 
 struct Card: Identifiable, Comparable{
     let val: Int
@@ -16,13 +17,23 @@ struct Card: Identifiable, Comparable{
     }
 }
 
-struct Player{
-    var name: String
+class Player: ObservableObject{
+    var name: Int
     var score: Int
     var cards: [Card]
-    var selectedCards: [Card] // Please implement me as as a priority queue and change clickCard to be better when you have the time :)
+    @Published var selectedCards: [Card] // Please implement me as as a priority queue and change clickCard to be better when you have the time :)
+    var gameState: ((String, Int), Int)
+//    var strategy: String?
     
-    mutating func clickCard(card:Card){
+    init(name: Int, score: Int, cards: [Card]){
+        self.name = name
+        self.score = 0
+        self.cards = cards
+        self.selectedCards = [Card]()
+        self.gameState = (("",0),1)
+    }
+    
+    func clickCard(card:Card){
         if (selectedCards.contains(where:{$0.id == card.id})) {
             selectedCards.removeAll(where:{$0.id == card.id})
         }
@@ -85,8 +96,9 @@ struct Player{
         return ("no", 0)
     }
     
-    func beats(rule:(String, Int)) -> Bool{
+    func beats() -> Bool{
         let myRule = getRule()
+        let rule = gameState.0
         
         // My hand is not valid
         if (myRule.0 == "no"){
@@ -111,7 +123,7 @@ struct Player{
         return false
     }
     
-    mutating func playSelectedCards(){
+    func playSelectedCards(){
         for card in cards{
             if (selectedCards.contains(where:{$0.id == card.id})) {
                 cards.removeAll(where:{$0.id == card.id})
@@ -119,12 +131,48 @@ struct Player{
         }
         selectedCards.removeAll()
     }
+    
+    func playTurn() -> (Player, (String, Int)){
+        if (self.beats() && self.gameState.1 == self.name){
+            let currentRule = self.getRule()
+            self.playSelectedCards()
+            return (self, currentRule)
+        }
+        return (self, ("no", 0))
+    }
+    
+    func updateGameState(gs:((String, Int), Int)){
+        self.gameState = gs
+    }
+    
+    func pass() -> (Player, (String, Int)){
+        if gameState.0.0 != ""{
+            return (self, ("", 0))
+        }
+        return (self, ("no", 0))
+    }
 }
+
+//class CPU {
+//    var player: Player
+//    var strategy: String
+//    
+//    init(player: Player){
+//        self.player = player
+//        self.strategy = "pass"
+//    }
+//    
+//    func playTurn(){
+//        if (self.strategy == "pass"){
+//            player.pass()
+//        }
+//    }
+//}
 
 struct ContentView: View {
     @State var deck = [Card]()
-    @State var player1 = Player(name:"Player 1", score:0, cards:[Card](), selectedCards:[Card]())
-    @State var player2 = Player(name:"Player 2", score:0, cards:[Card](), selectedCards:[Card]())
+    @StateObject var player1 = Player(name:1, score:0, cards:[Card]())
+    @StateObject var player2 = Player(name:2, score:0, cards:[Card]())
     @State var currentRule = ("",0)
     @State var currentTurn = 1
     
@@ -163,6 +211,30 @@ struct ContentView: View {
         return(out)
     }
     
+    func processEvent(event:(Player, (String, Int))){
+        let newRule = event.1
+        let player = event.0
+        // The player has passed
+        if (newRule.0 == ""){
+            currentTurn = 3-currentTurn
+            currentRule = ("", 0)
+            player1.updateGameState(gs: (currentRule, currentTurn))
+            player2.updateGameState(gs: (currentRule, currentTurn))
+            return
+        }
+        // It's a valid rule
+        if (newRule.0 != "no"){
+            currentRule = newRule
+            currentTurn = 3-currentTurn
+            player1.updateGameState(gs: (currentRule, currentTurn))
+            player2.updateGameState(gs: (currentRule, currentTurn))
+            if (player.cards.isEmpty){
+                player.score += 1
+                startRound()
+            }
+        }
+    }
+    
     var body: some View {
         ZStack {
             Image("background").ignoresSafeArea()
@@ -170,31 +242,23 @@ struct ContentView: View {
             VStack {
                 Button(action: {startGame()}, label: {Text("Start Game")})
                 Button(action: {startRound()}, label: {Text("Start Round")})
-                Text(player1.name + ": " + String(player1.score))
-                Text(player2.name + ": " + String(player2.score))
+                Text(String(player1.name) + ": " + String(player1.score))
+                Text(String(player2.name) + ": " + String(player2.score))
                 Text(currentRule.0 + " " + String(currentRule.1))
                 Text("current turn: " + String(currentTurn))
+                Text("current P1: " + String(player1.cards.count))
+                Text("current deck: " + String(deck.count))
+                Text("current P1 selected: " + String(player1.selectedCards.count))
+                Text("current P2 selected: " + String(player2.selectedCards.count))
             }
             HStack {
                 VStack{
                     HStack{
                         Button(action: {
-                            if ((player1.beats(rule:currentRule)) && (currentTurn == 1)){
-                                currentRule = player1.getRule()
-                                player1.playSelectedCards()
-                                currentTurn = 2
-                            }
-                            if (player1.cards.isEmpty){
-                                player1.score += 1
-                                player2.score -= 1
-                                startRound()
-                            }
+                            processEvent(event: player1.playTurn())
                         }, label: {Text("Play 1")})
                         Button(action: {
-                            if ((currentTurn == 1) && currentRule != ("", 0)){
-                                currentTurn = 2
-                                currentRule = ("", 0)
-                            }
+                            processEvent(event: player1.pass())
                         }, label: {Text("Pass 1")})
                     }
                     Text(describeCards(cards: player1.selectedCards))
@@ -208,23 +272,8 @@ struct ContentView: View {
                 VStack{
                     HStack{
                         Button(action: {
-                            if ((player2.beats(rule:currentRule)) && (currentTurn == 2)){
-                                currentRule = player2.getRule()
-                                player2.playSelectedCards()
-                                currentTurn = 1
-                            }
-                            if (player2.cards.isEmpty){
-                                player2.score += 1
-                                player1.score -= 1
-                                startRound()
-                            }
-                        }, label: {Text("Play 2")})
-                        Button(action: {
-                            if ((currentTurn == 2) && currentRule != ("", 0)){
-                                currentTurn = 1
-                                currentRule = ("", 0)
-                            }
-                        }, label: {Text("Pass 2")})
+                            processEvent(event: player2.pass())
+                            }, label: {Text("Play 2")})
                     }
                     Text(describeCards(cards: player2.selectedCards))
                     HStack{
