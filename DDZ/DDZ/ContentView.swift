@@ -186,6 +186,7 @@ struct ContentView: View {
                             }
                             if (player1.cards.isEmpty){
                                 player1.score += 1
+                                player2.score -= 1
                                 startRound()
                             }
                         }, label: {Text("Play 1")})
@@ -214,6 +215,7 @@ struct ContentView: View {
                             }
                             if (player2.cards.isEmpty){
                                 player2.score += 1
+                                player1.score -= 1
                                 startRound()
                             }
                         }, label: {Text("Play 2")})
