@@ -199,6 +199,8 @@ struct ContentView: View {
         player2.cards.sort()
         player1.selectedCards.removeAll()
         player2.selectedCards.removeAll()
+        player1.updateGameState(gs: (currentRule, currentTurn))
+        player2.updateGameState(gs: (currentRule, currentTurn))
     }
     
     func describeCards(cards:[Card]) -> String{
@@ -246,10 +248,10 @@ struct ContentView: View {
                 Text(String(player2.name) + ": " + String(player2.score))
                 Text(currentRule.0 + " " + String(currentRule.1))
                 Text("current turn: " + String(currentTurn))
-                Text("current P1: " + String(player1.cards.count))
-                Text("current deck: " + String(deck.count))
-                Text("current P1 selected: " + String(player1.selectedCards.count))
-                Text("current P2 selected: " + String(player2.selectedCards.count))
+//                Text("current P1: " + String(player1.cards.count))
+//                Text("current deck: " + String(deck.count))
+//                Text("current P1 selected: " + String(player1.selectedCards.count))
+//                Text("current P2 selected: " + String(player2.selectedCards.count))
             }
             HStack {
                 VStack{
@@ -262,9 +264,10 @@ struct ContentView: View {
                         }, label: {Text("Pass 1")})
                     }
                     Text(describeCards(cards: player1.selectedCards))
-                    HStack{
+                    HStack(spacing: -25){
                         ForEach(player1.cards){ card in
-                            Button(action: {player1.clickCard(card:card)}, label:{Text(String(card.id))})
+                            Button(action: {player1.clickCard(card:card)}, label:{Image(card.id).resizable()
+                                .scaledToFit().frame(width: 50, height: 50)})
                         }
                     }
                 }.fixedSize().rotationEffect(Angle(degrees:90)).frame(width: 30)
@@ -276,9 +279,10 @@ struct ContentView: View {
                             }, label: {Text("Play 2")})
                     }
                     Text(describeCards(cards: player2.selectedCards))
-                    HStack{
+                    HStack(spacing: -25){
                         ForEach(player2.cards){ card in
-                            Button(action: {player2.clickCard(card:card)}, label:{Text(String(card.id))})
+                            Button(action: {player2.clickCard(card:card)}, label:{Image(card.id).resizable()
+                                .scaledToFit().frame(width: 50, height: 50)})
                         }
                     }
                 }.fixedSize().rotationEffect(Angle(degrees:-90)).frame(width: 30)
