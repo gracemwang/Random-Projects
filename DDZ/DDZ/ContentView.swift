@@ -17,13 +17,14 @@ struct Card: Identifiable, Comparable{
     }
 }
 
+
 class Player: ObservableObject{
     var name: Int
     var score: Int
     var cards: [Card]
     @Published var selectedCards: [Card] // Please implement me as as a priority queue and change clickCard to be better when you have the time :)
     var gameState: ((String, Int), Int)
-//    var strategy: String?
+    var strategy: ((((String, Int), Int), [Card]) -> [Card])?
     
     init(name: Int, score: Int, cards: [Card]){
         self.name = name
@@ -75,7 +76,7 @@ class Player: ObservableObject{
         if ((n == 5) && (selectedCards[2].val == selectedCards[4].val) && (selectedCards[0].val == selectedCards[1].val)){
             return ("three+two", selectedCards[2].val)
         }
-        if (n >= 5){
+        if (n >= 5){ // Normal straight
             var prev = selectedCards[0].val
             var isStraight = true
             for i in 1...(n-1){
@@ -84,14 +85,57 @@ class Player: ObservableObject{
                 }
                 prev += 1
             }
-            if isStraight{return ("straight", selectedCards[n-1].val)}
+            if isStraight{return ("straight"+String(n), selectedCards[n-1].val)}
         }
-        if (n >= 5){ // EDIT THIS TO ALLOW ACE + TWO ON THE BOTTOM
+        if (n >= 5){ // Straight special case, beginning in A/2
+            var prev = selectedCards[0].val
+            var isStraight = true
             
+            // Starts with A
+            if ((selectedCards[n-2].val == 14) && (selectedCards[n-1].val == 15) && (selectedCards[0].val == 3)){
+                prev = 3
+                for i in 1...(n-3){
+                    if ((selectedCards[i].val >= 14) || (selectedCards[i].val != (prev + 1))){
+                        isStraight = false
+                    }
+                    prev += 1
+                }
+                if isStraight{return ("straight"+String(n), selectedCards[n-3].val)}
+            }
+            
+            // Starts with 2
+            if ((selectedCards[n-1].val == 15) && (selectedCards[0].val == 3)){
+                prev = 3
+                for i in 1...(n-2){
+                    if ((selectedCards[i].val >= 14) || (selectedCards[i].val != (prev + 1))){
+                        isStraight = false
+                    }
+                    prev += 1
+                }
+                if isStraight{return ("straight"+String(n), selectedCards[n-2].val)}
+            }
         }
         if (n >= 6){ // Check for a straight of pairs. I think it doesn't allow A + 2 on the bottom and doesn't allow 2 on the top.
+            var prev = selectedCards[0].val
+            var secondPart = true
+            var isStraightPair = true
+            for i in 1...(n-1){
+                if (selectedCards[i].val >= 15){
+                    isStraightPair = false
+                }
+                
+                if ((secondPart) && (selectedCards[i].val != prev)){
+                    isStraightPair = false
+                }
+                if ((!secondPart) && (selectedCards[i].val != prev+1)){
+                    isStraightPair = false
+                }
+                secondPart = !secondPart
+                prev = selectedCards[i].val
+            }
+            if isStraightPair{return ("straightpair"+String(n), selectedCards[n-1].val)}
         }
-        if (n >= 6){ // Add airplanes
+        if (n >= 6){ // Airplane
         }
         return ("no", 0)
     }
